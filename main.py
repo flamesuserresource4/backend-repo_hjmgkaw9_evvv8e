@@ -142,6 +142,68 @@ def list_quotes():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Seed Mock Data ---
+@app.post("/seed")
+def seed_mock_data():
+    """Insert a set of mock users, listings, installers, leads, and quotes.
+    Returns inserted ids for quick reference."""
+    try:
+        inserted: Dict[str, List[str]] = {
+            "users": [],
+            "listings": [],
+            "installers": [],
+            "leads": [],
+            "quotes": [],
+        }
+
+        # Users
+        users = [
+            User(name="Alice Buyer", email="alice@example.com", role="buyer", city="Austin", state="TX"),
+            User(name="Sam Seller", email="sam@sellsolar.co", role="seller", company="SellSolar", city="Phoenix", state="AZ"),
+            User(name="Ivy Installer", email="ivy@brightinstalls.com", role="installer", company="Bright Installs", city="San Diego", state="CA"),
+        ]
+        for u in users:
+            inserted["users"].append(create_document("user", u))
+
+        # Listings
+        listings = [
+            Listing(title="450W Mono PERC Panel", description="High-efficiency Tier-1 module", product_type="panel", brand="SunPeak", wattage=450, price=219.0, images=["https://images.unsplash.com/photo-1509395176047-4a66953fd231?q=80&w=1200&auto=format&fit=crop"], seller_id=inserted["users"][1]),
+            Listing(title="7kW Residential Package", description="Panels, inverter, racking, and monitoring", product_type="package", brand="SolarOne", price=11999.0, images=["https://images.unsplash.com/photo-1509395176047-4a66953fd231?q=80&w=1200&auto=format&fit=crop"], seller_id=inserted["users"][1]),
+            Listing(title="Hybrid Inverter 6kW", description="Battery-ready hybrid inverter", product_type="inverter", brand="VoltMax", price=2499.0, images=["https://images.unsplash.com/photo-1581092808360-9a3b0c6a2831?q=80&w=1200&auto=format&fit=crop"], seller_id=inserted["users"][1]),
+        ]
+        for l in listings:
+            inserted["listings"].append(create_document("listing", l))
+
+        # Installers
+        installers = [
+            Installer(user_id=inserted["users"][2], services=["residential", "battery"], areas=["San Diego", "LA"], certifications=["NABCEP"], rating=4.8),
+            Installer(user_id=inserted["users"][2], services=["commercial"], areas=["Orange County"], certifications=["NABCEP"], rating=4.6),
+        ]
+        for ins in installers:
+            inserted["installers"].append(create_document("installer", ins))
+
+        # Leads
+        leads = [
+            Leadrequest(buyer_name="Alice Buyer", buyer_email="alice@example.com", city="Austin", state="TX", avg_monthly_bill_usd=165.0, desired_system_size_kw=6.5, notes="South-facing roof, minimal shade"),
+            Leadrequest(buyer_name="Bob Homeowner", buyer_email="bob@home.com", city="San Jose", state="CA", avg_monthly_bill_usd=210.0, desired_system_size_kw=8.0),
+        ]
+        for ld in leads:
+            inserted["leads"].append(create_document("leadrequest", ld))
+
+        # Quotes
+        quotes = [
+            Quote(lead_id=inserted["leads"][0], installer_id=inserted["users"][2], price_usd=15250.0, timeline_weeks=6, warranty_years=25, message="Includes 7.2kW array with monitoring", status="sent"),
+            Quote(lead_id=inserted["leads"][0], installer_id=inserted["users"][2], price_usd=13999.0, timeline_weeks=5, warranty_years=20, message="Budget option, same output", status="sent"),
+            Quote(lead_id=inserted["leads"][1], installer_id=inserted["users"][2], price_usd=17200.0, timeline_weeks=7, warranty_years=25, message="8kW premium components", status="sent"),
+        ]
+        for q in quotes:
+            inserted["quotes"].append(create_document("quote", q))
+
+        return {"inserted": inserted}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/test")
 def test_database():
     response = {
